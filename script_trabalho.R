@@ -1,10 +1,8 @@
-#-------* Limpando o ambiente *-------
+#---------------* Limpando o ambiente *---------------
 
 rm(list = ls())
 
-#---------------*   *---------------
-
-#-------* Instalando e carregando pacotes necessários *-------
+#---------------* Instalando e carregando pacotes necessários *---------------
 
 pacotes <- c( "readr", "leaps", "MASS", "car", "ggplot2")
 
@@ -20,23 +18,70 @@ cat("\014") #limpando console
 
 #---------------* Importando dados csv para análise *---------------
 
-dados <- read.csv("winequality-red.csv", header = TRUE, sep = ";")
-names(dados)
-colnames(dados) <- c('x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7', 'x8', 'x9', 'x10', 'x11', 'y') # renomeando as variáveis para facilitar as regressões
+dados_orig <- read.csv("winequality-red.csv", header = TRUE, sep = ";")
+names(dados_orig)
 
-dados <- dados[, c("y", setdiff(names(dados), "y"))] # alterando a posição de y, para ser a primeira coluna 
+# Por questões de facilidade, renomeei as variáveis para x1, x2, ..., x11. Antes disso, vou criar um mapa de variáveis, para facilitar a interpretação, quando necessário
+
+# Criando o mapa de variáveis
+mapa_variaveis <- data.frame(
+  x = paste0("x", 1:11), # novo nome para as variáveis
+  original = names(dados_orig)[names(dados_orig) != "quality"] # nomes originais das variáveis independentes
+)
+
+mapa_variaveis
+
+# cópia dos dados originais, em que irei renomear as variáveis
+dados <- dados_orig 
+
+# renomeando as colunas do dataset cópia (dados)
+colnames(dados) <- c( 
+  paste0("x", 1:11),
+  "y"
+)
+
+# garantindo que y seja a primeira coluna
+dados <- dados[, c("y", paste0("x", 1:11))]
 
 #---------------* Análise Exploratória *---------------
 
 head(dados) 
 str(dados)       
 summary(dados)  
-pairs(dados)
+
+hist(dados$y, breaks = 20, main = "Distribuição da Qualidade do Vinho", xlab = "Qualidade")
+boxplot(dados$y, main = "Boxplot da Qualidade", pch=19)
+
+# criando função para verificar lineariedade de Y em relação às variáveis X
+
+grafico_y_x <- function(nome_x, data) {
+  x <- data[[nome_x]]
+  y <- data$y
+  
+  plot(
+    x, data$y,
+    xlab = nome_x,
+    ylab = "Qualidade",
+    main = paste("Qualidade vs", nome_x)
+  )
+  
+  abline(lm(y ~ x), col = "red")
+  
+}
+
+# # verificar lineariedade em relação às seguintes variáveis: x2, x4, x7, x9 ,x11  # explicar porque a escolha dessas variáveis
+
+vars <- c("x2", "x4", "x7", "x11")
+
+par(mfrow = c(2, 2))
+invisible(lapply(vars, grafico_y_x, data = dados))
+
 
 #---------------* Criação do modelo completo *---------------
 
 modelo_completo <- lm(y ~ ., data = dados)
 modelo_completo
+summary(modelo_completo)
 
 #---------------* Testando todas as possíveis regressões  *---------------
 
@@ -67,4 +112,3 @@ plot(modelo_stepwise)
 AIC(modelo_completo, modelo_forward, modelo_backward, modelo_stepwise)
 BIC(modelo_completo, modelo_forward, modelo_backward, modelo_stepwise)
 
-  
