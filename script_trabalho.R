@@ -4,7 +4,7 @@ rm(list = ls())
 
 #---------------* Instalando e carregando pacotes necessários *---------------
 
-pacotes <- c( "readr", "leaps", "MASS", "car", "ggplot2")
+pacotes <- c( "readr", "leaps", "MASS", "car", "ggplot2", 'GGally')
 
 pacotes_nao_instalados <- pacotes[!(pacotes %in% installed.packages()[, "Package"])] # verificar
 
@@ -50,7 +50,8 @@ str(dados)
 summary(dados)  
 
 hist(dados$y, breaks = 20, main = "Distribuição da Qualidade do Vinho", xlab = "Qualidade")
-boxplot(dados$y, main = "Boxplot da Qualidade", pch=19)
+
+ggpairs(dados)
 
 # criando função para verificar lineariedade de Y em relação às variáveis X
 
@@ -69,7 +70,8 @@ grafico_y_x <- function(nome_x, data) {
   
 }
 
-# # verificar lineariedade em relação às seguintes variáveis: x2, x4, x7, x9 ,x11  # explicar porque a escolha dessas variáveis
+
+#verificar lineariedade em relação às seguintes variáveis: x2, x4, x7, x9 ,x11  # explicar porque a escolha dessas variáveis
 
 vars <- c("x2", "x4", "x7", "x11")
 
@@ -77,38 +79,57 @@ par(mfrow = c(2, 2))
 invisible(lapply(vars, grafico_y_x, data = dados))
 
 
+
 #---------------* Criação do modelo completo *---------------
 
 modelo_completo <- lm(y ~ ., data = dados)
 modelo_completo
-summary(modelo_completo)
+summary(modelo_completo) # o modelo completo já nos traz uma ideia de quais variáveis podem ser importantes e significativas para o modelo final, mas ainda não nos dá certeza
 
 #---------------* Testando todas as possíveis regressões  *---------------
 
-subsets <- regsubsets(y ~ ., data = dados, nvmax = ncol(dados) - 1) # testa todas as combinações possíveis de regressão via critério <verificar qual o critério>
-summary(subsets) 
+subsets <- regsubsets( y ~ ., data = dados, nvmax = ncol(dados) - 1)
 
-summary(subsets)$adjr2 # com base no R2, o modelo com 8 variáveis é o 'melhor', com um R2 de 35.67% (ainda pode melhorar)
-summary(subsets)$cp # verificar
-summary(subsets)$bic # verificar (e checar se realmente entra nessa etapa)
-summary(subsets)$rss # verificar
+resumo_subsets <- summary(subsets)
+resumo_subsets
+resumo_subsets$which # variáveis presentes em cada modelo
 
-#---------------*  Métodos forward, backward e stepwise (TESTE)  *---------------
+resumo_subsets$adjr2 # r2 ajustado de cada um dos modelos
+resumo_subsets$cp # cp de mallows
 
-modelo_forward <- step(modelo_completo, direction = 'forward')
-modelo_forward
-par(mfrow = c(2, 2))
-plot(modelo_forward)  
+par(mfrow=c(1,1))
+plot(subsets, scale='Cp', main='Seleção de Modelos - Critério CP de Mallows')
 
-modelo_backward <- step(modelo_completo, direction = 'backward')
-modelo_backward
-par(mfrow = c(2, 2))
-plot(modelo_backward)
+# com base nos valores de R2 ajustado e Cp de Mallows, os modelos com 6 a 8 variáveis são os melhores
+  
+#---------------*  Métodos forward, backward e stepwise  *---------------
 
-modelo_stepwise <- step(modelo_completo, direction = 'both')
-modelo_stepwise
-plot(modelo_stepwise)
+y <- dados$y
+modelo_nulo<- lm(y ~ 1, data= dados) # modelo nulo, com a presença apenas do intercepto
 
-AIC(modelo_completo, modelo_forward, modelo_backward, modelo_stepwise)
-BIC(modelo_completo, modelo_forward, modelo_backward, modelo_stepwise)
+# FORWARD
+modelo_forward <- step(modelo_nulo, direction = 'forward', scope=formula(modelo_completo))
+summary(modelo_forward)
+car::vif(modelo_forward) # resultados de VIF indicam ausência de MULTICOLINEARIDADE severa
+plot(modelo_forward)
+
+#BACKWARD
+modelo_backward <- step(modelo_completo, direction='backward')
+summary(modelo_backward)
+car::vif(modelo_backward)
+
+#STEPWISE
+modelo_stepwise <- step(modelo_nulo, direction = 'both', scope=formula(modelo_completo))
+summary(modelo_stepwise)
+car::vif(modelo_stepwise)
+
+#---------------* SELEÇÃO DE MODELOS *---------------
+
+AIC(modelo_forward, modelo_backward, modelo_stepwise)
+BIC(modelo_forward, modelo_backward, modelo_stepwise)
+
+# nessas abordagens, ambos os métodos chegaram ao MESMO modelo final!
+
+#Análise de resíduos e diagnóstico (pontos: influente, alavanca, outlier)
+
 
