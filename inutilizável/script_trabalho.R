@@ -111,7 +111,7 @@ modelo_nulo<- lm(y ~ 1, data= dados) # modelo nulo, com a presença apenas do in
 modelo_forward <- step(modelo_nulo, direction = 'forward', scope=formula(modelo_completo))
 summary(modelo_forward)
 car::vif(modelo_forward) # resultados de VIF indicam ausência de MULTICOLINEARIDADE severa
-plot(modelo_forward)
+# plot(modelo_forward)
 
 #BACKWARD
 modelo_backward <- step(modelo_completo, direction='backward')
@@ -132,4 +132,5 @@ BIC(modelo_forward, modelo_backward, modelo_stepwise)
 
 #Análise de resíduos e diagnóstico (pontos: influente, alavanca, outlier)
 
-
+par(mfrow=c(2,2))
+plot(modelo_forward)
