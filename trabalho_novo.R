@@ -18,19 +18,15 @@ cat("\014") #limpando console
 
 #---------------* Importando dados csv para análise *---------------
 
-# dados <- read.csv("dados.csv", header = TRUE, sep = ",")
-# names(dados)
-# 
-# dados$obs <- NULL
-# dados
+# No R, use 'read.csv2' ou especifique o argumento 'dec'
+dados <- read.csv("energy_efficiency.csv", sep = ',')
 
-library(MASS)
-data(Boston)
-
+names(dados)
+# garantindo que y seja a primeira coluna
 
 #---------------* Análise Exploratória *---------------
 
-head(data) 
+head(dados) 
 str(dados)       
 summary(dados)  
 
@@ -39,7 +35,7 @@ hist(dados$y, breaks = 20, main = "", xlab = "")
 ggpairs(dados)
 
 #---------------------
-
+y <- dados$Y
 modelo_completo <- lm(y ~ ., data = dados)
 modelo_completo
 summary(modelo_completo) # o modelo completo já nos traz uma ideia de quais variáveis podem ser importantes e significativas para o modelo final, mas ainda não nos dá certeza
