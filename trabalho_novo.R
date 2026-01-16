@@ -4,9 +4,9 @@ rm(list = ls())
 
 #---------------* Instalando e carregando pacotes necessários *---------------
 
-pacotes <- c( "readr", "leaps", "MASS", "car", "ggplot2", 'GGally')
+pacotes <- c( "readr", "leaps", "MASS", "car", "ggplot2", 'GGally', 'corrplot')
 
-pacotes_nao_instalados <- pacotes[!(pacotes %in% installed.packages()[, "Package"])] # verificar
+pacotes_nao_instalados <- pacotes[!(pacotes %in% installed.packages()[, "Package"])]
 
 if (length(pacotes_nao_instalados) > 0) {
   install.packages(pacotes_nao_instalados, dependencies = TRUE)
@@ -73,7 +73,7 @@ str(dados)
 summary(dados)  
 
 #------- Distribuição da variável resposta
-ggplot(dados, aes(x = y)) +
+ggplot(dados, aes(x = y)) +                        # comentar o que o gráfico representa
   geom_histogram(bins = 30, color = 'white') +
   labs(
     title = "Distribuição do valor mediano das residências (variável resposta)",
@@ -81,8 +81,8 @@ ggplot(dados, aes(x = y)) +
     y = "Frequência"
   )
 
-# melhorar ★
-ggplot(dados, aes(y = y)) +
+# melhorar ★                                   # comentar o que o gráfico representa
+ggplot(dados, aes(y = y)) +                       
   geom_boxplot(outlier.color = "red") +
   labs(
     title = "Boxplot do valor mediano das residências",
@@ -112,22 +112,25 @@ ggplot(dados_long, aes(x = variavel, y = valor)) +
   geom_point(stat = "summary", fun = "mean", shape = 4,
              size = 3) + coord_flip() 
 
+cor_mat <- cor(dados)
+corrplot(cor_mat, method = "color", addCoef.col = TRUE, type = 'upper', bg='black')
 
-ggplot(dados, aes(x = x8, y = y)) +
-  geom_point(alpha = 0.4) +
-  geom_smooth(method = "lm", se = FALSE, color = "red") +
-  labs(
-    title = "Valor das residências vs renda média",
-    x = "Renda média",
-    y = "Valor mediano das residências"
-  )
+
+  # ggplot(dados, aes(x = x8, y = y)) +
+#   geom_point(alpha = 0.4) +
+#   geom_smooth(method = "lm", se = FALSE, color = "red") +
+#   labs(
+#     title = "Valor das residências vs renda média",
+#     x = "Renda média",
+#     y = "Valor mediano das residências"
+#   )
 
 
 #---------------------
 y <- dados$y
 modelo_completo <- lm(y ~ ., data = dados)
 modelo_completo
-summary(modelo_completo) # o modelo completo já nos traz uma ideia de quais variáveis podem ser importantes e significativas para o modelo final, mas ainda não nos dá certeza
+summary(modelo_completo) 
 
 #---------------* Testando todas as possíveis regressões  *---------------
   
@@ -140,27 +143,25 @@ resumo_subsets$which # variáveis presentes em cada modelo
 resumo_subsets$adjr2 # r2 ajustado de cada um dos modelos
 resumo_subsets$cp # cp de mallows
 
-par(mfrow=c(1,1))
 plot(subsets, scale='Cp', main='Seleção de Modelos - Critério CP de Mallows')
-
-# com base nos valores de R2 ajustado e Cp de Mallows, os modelos com 6 a 8 variáveis são os melhores
 
 #---------------*  Métodos forward, backward e stepwise  *---------------
 
 modelo_nulo<- lm(y ~ 1, data= dados) # modelo nulo, com a presença apenas do intercepto
 
-# FORWARD
+#--- FORWARD
 modelo_forward <- step(modelo_nulo, direction = 'forward', scope=formula(modelo_completo))
 summary(modelo_forward)
 car::vif(modelo_forward) # checar multicolineariedade
-# plot(modelo_forward)
 
-#BACKWARD
+mapa_variaveis
+
+#--- BACKWARD
 modelo_backward <- step(modelo_completo, direction='backward')
 summary(modelo_backward)
 car::vif(modelo_backward)
 
-#STEPWISE
+#--- STEPWISE
 modelo_stepwise <- step(modelo_nulo, direction = 'both', scope=formula(modelo_completo))
 summary(modelo_stepwise)
 car::vif(modelo_stepwise)
@@ -176,3 +177,15 @@ BIC(modelo_forward, modelo_backward, modelo_stepwise)
 
 par(mfrow=c(2,2))
 plot(modelo_forward)
+par(mfrow=c(1,1))
+influencePlot(modelo_forward) # como interpretar?
+
+rstudent <- rstudent(modelo_forward)
+
+which(abs(rstudent) > 3)
+
+
+h <- hatvalues(modelo_forward)
+
+limite_h <- 2 * (length(coef(modelo_forward)) / nrow(dados))
+which(h > limite_h)
