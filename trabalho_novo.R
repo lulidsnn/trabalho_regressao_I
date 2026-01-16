@@ -16,6 +16,44 @@ lapply(pacotes, library, character.only = TRUE)
 
 cat("\014") #limpando console
 
+#---------------* Entendendo as variáveis *-------------------------
+
+# ----------------------------------------------------------------------
+# |   Dataset criado a partir de dados do Censo de 1990 do estado da    |
+# |   Califórnia. Ao todo, possuímos 10 variáveis, nove variáveis       |
+# |   independentes e uma variável dependente. Nosso objetivo é estimar |
+# |   o valor mediano das casas em um quarteirão.                       |
+# |                                                                     |
+# |                                                                     |
+# |                                                                     |
+# | 1. Longitude: Medida da distância de uma casa para oeste; um valor  |
+# |    maior indica uma localização mais a oeste.                       |
+# |                                                                     |
+# | 2. Latitude: Medida da distância de uma casa para norte; um valor   |
+# |    maior indica uma localização mais ao norte.                      |
+# |                                                                     |
+# | 3. Idade mediana das Casas: Idade mediana das casas em um           |
+# |    quarteirão; um número menor indica uma construção mais nova.     |
+# |                                                                     |
+# | 4. Total de cômodos: Número total de cômodos em um quarteirão.      |
+# |                                                                     |
+# | 5. Total de quartos: Número total de quartos em um quarteirão.      |
+# |                                                                     |
+# | 6. População: Número total de pessoas que residem em um             |
+# |    quarteirão.                                                      |
+# |                                                                     |
+# | 7. Domicílios: Número total de domicílios, ou seja, grupos de       |
+# |    pessoas que residem em uma mesma casa, em um quarteirão.         |
+# |                                                                     |
+# | 8. Renda mediana: Renda mediana dos domicílios em um quarteirão     |
+# |    (medida em dezenas de milhares de dólares americanos).           |
+# |                                                                     |
+# | 9. Valor mediano das casas: Valor mediano dos domicílios em um      |
+# |    quarteirão (medido em dólares americanos).                       |
+# ----------------------------------------------------------------------
+
+
+
 #---------------* Importando dados csv para análise *---------------
 
 dados_orig <- read.csv("housing.csv", sep = ',')
@@ -105,7 +143,7 @@ summary(dados_limpos)
 ggplot(dados_limpos, aes(x = y)) +                        
   geom_histogram(bins = 30, color = 'white') +
   labs(
-    title = "Distribuição do valor mediano das residências (variável resposta) - DADOS LIMPOS",
+    title = "Distribuição do valor mediano das residências (variável resposta)",
     x = "Valor mediano",
     y = "Frequência"
   )
@@ -149,7 +187,7 @@ corrplot(cor_mat_limpo, method = "color", addCoef.col = TRUE, type = 'upper', bg
 
 fun_modelo_completo <-function(d){
   y <- d$y
-  modelo_completo <- lm(y ~ ., data = dados)
+  modelo_completo <- lm(y ~ ., data = d)
   print(summary(modelo_completo))
   print(vif(modelo_completo))
   return(modelo_completo)
@@ -173,9 +211,9 @@ transf_dados <- function(d){
 }
 
 dadosc_transf <- transf_dados(dados)
-corrplot(cor(dadosc_transf), method = "color", addCoef.col = TRUE, type = 'upper', bg='black', title = 'Matriz de correlação com as novas variáveis (DADOS CRUS)')
+corrplot(cor(dadosc_transf), method = "color", addCoef.col = TRUE, type = 'upper', bg='black')
 dadosL_transf <- transf_dados(dados_limpos)
-corrplot(cor(dadosL_transf), method = "color", addCoef.col = TRUE, type = 'upper', bg='black', title = 'Matriz de correlação com as novas variáveis (DADOS LIMPOS)')
+corrplot(cor(dadosL_transf), method = "color", addCoef.col = TRUE, type = 'upper', bg='black')
 
 
 #---------------* Testando todas as possíveis regressões  *---------------
@@ -267,7 +305,7 @@ modelo_final <- metodos_limpos$Forward
 
 par(mfrow = c(2, 2)) 
 plot(modelo_final_c)
-plot(modelo_final_l)
+plot(modelo_final)
 
 par(mfrow = c(1, 1))
 
@@ -289,6 +327,7 @@ corte_cook <- 4 / n
 influentes <- which(cook_dist > corte_cook)
 print(paste("Total de Pontos Influentes:", length(influentes)))
 
+plot(mfrow=c(1,1))
 plot(cook_dist, pch = 20, main = "Distância de Cook: Identificando Pontos Influentes",
      ylab = "Distância de Cook", xlab = "Índice da Observação")
-abline(h = corte_cook, col = "red", lty = 2) # Linha de corte
+abline(h = corte_cook, col = "red", lty = 2) 
